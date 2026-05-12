@@ -98,7 +98,7 @@ const int Kh = 24;
 const int Kv = 26;
 const int Nv_1D = Nh;
 
-const string polarconh = "GA";  // RM/5G/beta/GA
+const string polarconh = "RM-GA";  // RM/5G/beta/GA/RM-GA
 const string polarconv = "RM";  // RM/5G/beta/5
 //const int vertical_construction_fixed[Nv] = { 62,61,59,55,47,60,58,57,54,53,51,46,45,43,30,29,39,27,23,56,52,15,50,44,49,42,41,28,38,26,37,25,35,22,21,14,19,48,13,40,11,36,24,34,7,20,33,18,12,17,10,9,6,32,5,3,16,8,4,2,1,0,63,31 };
 const bool sys = false;

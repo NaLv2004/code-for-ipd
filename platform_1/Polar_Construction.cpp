@@ -6,4 +6,5 @@ void polar_codeconstruction(string method, int N, int K, int** GG, float sigma, 
 	if (method == "beta") beta_codeconstruction(N, best_channel);
 	if (method == "GA") GA_codeconstruction(N, sigma, best_channel);
 	if (method == "5G") B5G_codeconstruction(N, K, best_channel);
+	if (method == "RM-GA") RM_GA_codeconstruction(N, K, GG, sigma, best_channel);
 }

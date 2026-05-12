@@ -72,4 +72,6 @@ platform_1/crc_enhanced_2D/crc_check_decoding.txt
 platform_1/crc_enhanced_2D/crc_replacement_codeword_log.txt
 *.zip
 *.ipch
+platform_1/run_log.txt
+platform_1/run_err.txt
 
