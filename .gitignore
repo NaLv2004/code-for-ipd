@@ -75,3 +75,12 @@ platform_1/crc_enhanced_2D/crc_replacement_codeword_log.txt
 platform_1/run_log.txt
 platform_1/run_err.txt
 
+
+# result0512: keep only fig/ and tex charts; ignore exes, run subfolders, and large stdout dumps
+platform_1/result0512/run_*/
+platform_1/result0512/*.exe
+platform_1/result0512/*.err.txt
+platform_1/result0512/RM-GA.txt
+platform_1/result0512/GA.txt
+platform_1/result0512/5G.txt
+platform_1/result0512/progress_iter*.txt

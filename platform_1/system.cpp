@@ -733,12 +733,12 @@ void system2D_LSD(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -762,8 +762,8 @@ void system2D_LSD(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -1036,7 +1036,7 @@ void system2D_LSD(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -1082,7 +1082,7 @@ void system2D_LSD(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -1716,6 +1716,18 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 	std::ofstream file_det("det_timing.txt", std::ios::app);
 	std::ofstream file_dec("dec_timing.txt", std::ios::app);
 	std::ofstream file_err_num("total_frames.txt", std::ios::app);
+	// Lightweight progress log: one line every 10 newly-errored frames.
+	// Filename encodes softiter and polarconh so multiple parallel runs do not collide.
+	// Written to current working directory (caller is expected to launch the exe from
+	// the desired output folder, e.g. result0512/run_<polarconh>_iter<softiter>/).
+	std::string progress_log_name = std::string("progress_iter") + std::to_string(softiter) + "_" + polarconh + ".txt";
+	std::ofstream file_progress(progress_log_name, std::ios::app);
+	if (file_progress.is_open()) {
+		file_progress << "# === run start: polarconh=" << polarconh << " polarconv=" << polarconv
+			<< " softiter=" << softiter << " ===\n";
+		file_progress << "# fields: SNR_dB  frames  err_frames  FER  err_bits  total_bits  BER\n";
+		file_progress.flush();
+	}
 	auto det_end = std::chrono::system_clock::now();
 	int Nt2 = 2 * Nt;
 	int Nr2 = 2 * Nr;
@@ -1914,12 +1926,12 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -1943,8 +1955,8 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -2044,33 +2056,33 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 			for (int i = 0; i < N; i++) { cnt_nnz_pos[i] = 0; }
 			int codeword[N];
 			for (int i = 0; i < Kh; i++) { cout << Ah[i] << " "; }
-			// ×îÐ¡ÖØÁ¿Âë×Ö´æ´¢
-			const int MAX_MIN_CODWORDS = 1E5; // ¼ÙÉè×î¶à1000¸ö×îÐ¡ÖØÁ¿Âë×Ö
+			// ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´æ´¢
+			const int MAX_MIN_CODWORDS = 1E5; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1000ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			int** min_codewords = new int* [MAX_MIN_CODWORDS];
 			for (int i = 0; i < MAX_MIN_CODWORDS; i++) {
 				min_codewords[i] = new int[N];
 			}
 			// int min_codewords[MAX_MIN_CODWORDS][N];
-			int min_weight = N + 1; // ³õÊ¼»¯Îª×î´ó¿ÉÄÜÖØÁ¿+1
+			int min_weight = N + 1; // ï¿½ï¿½Ê¼ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½+1
 			int min_count = 0;
 
-			// Ã¶¾ÙËùÓÐ2^KÖÖÐÅÏ¢ÏòÁ¿
+			// Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2^Kï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
 			long long total_combinations = 1LL << K; // 2^K
 
 			for (long long info = 1; info < total_combinations; info++) {
-				// ³õÊ¼»¯ÊäÈëÏòÁ¿£¨¶³½áÎ»ÉèÎª0£©
+				// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Îª0ï¿½ï¿½
 				memset(u, 0, N * sizeof(int));
 
-				// ÉèÖÃÐÅÏ¢Î»
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢Î»
 				for (int i = 0; i < K; i++) {
-					int bit = (info >> i) & 1; // ÌáÈ¡µÚiÎ»
+					int bit = (info >> i) & 1; // ï¿½ï¿½È¡ï¿½ï¿½iÎ»
 					u[Ah[i]] = bit;
 				}
 
-				// ¼«»¯±àÂë
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				PolarEncode_xor(codeword, u, N);
 
-				// ¼ÆËãµ±Ç°Âë×ÖÖØÁ¿
+				// ï¿½ï¿½ï¿½ãµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				// int current_weight = CalculateWeight(codeword, N);
 				int weight = 0;
 				for (int i = 0; i < N; i++) {
@@ -2078,7 +2090,7 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 				}
 				int current_weight = weight;
 
-				// ¸üÐÂ×îÐ¡ÖØÁ¿Âë×Ö¼¯ºÏ
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½
 				if (current_weight < min_weight) {
 					min_weight = current_weight;
 					min_count = 0;
@@ -2091,16 +2103,16 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 						min_count++;
 					}
 					else {
-						std::cerr << "¾¯¸æ£º³¬¹ý×îÐ¡Âë×Ö´æ´¢ÈÝÁ¿" << std::endl;
+						std::cerr << "ï¿½ï¿½ï¿½æ£ºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½Ö´æ´¢ï¿½ï¿½ï¿½ï¿½" << std::endl;
 					}
 				}
 			}
 
-			// Êä³ö½á¹û
-			std::cout << "×îÐ¡ÖØÁ¿: " << min_weight << std::endl;
-			std::cout << "×îÐ¡ÖØÁ¿Âë×Ö¸öÊý: " << min_count << std::endl;
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			std::cout << "ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½: " << min_weight << std::endl;
+			std::cout << "ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½: " << min_count << std::endl;
 			/*for (int i = 0; i < min_count; i++) {
-				std::cout << "Âë×Ö " << i + 1 << ": ";
+				std::cout << "ï¿½ï¿½ï¿½ï¿½ " << i + 1 << ": ";
 				for (int j = 0; j < N; j++) {
 					std::cout << min_codewords[i][j];
 				}
@@ -2490,7 +2502,7 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -2536,7 +2548,7 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -3242,6 +3254,23 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 				fflush(stdout);
 			}
 
+			// Lightweight progress log: write one line every 10 newly-errored frames per SNR point.
+			// Uses a block-scope static counter; resets when a new SNR point starts (Num_Frame_Error==0).
+			{
+				static int s_last_logged_err = -1;
+				if (Num_Frame_Error == 0) s_last_logged_err = -1;
+				if (file_progress.is_open() && Num_Frame_Error > 0
+					&& (Num_Frame_Error % 10 == 0)
+					&& Num_Frame_Error != s_last_logged_err) {
+					file_progress << nSNR << "\t" << frame << "\t" << Num_Frame_Error
+						<< "\t" << ((double)Num_Frame_Error / frame)
+						<< "\t" << Num_Error << "\t" << (N_Info * frame)
+						<< "\t" << ((double)Num_Error / (double)N_Info / (double)frame) << "\n";
+					file_progress.flush();
+					s_last_logged_err = Num_Frame_Error;
+				}
+			}
+
 			
 			// output interleaving pattern
 			//if (Num_Frame_Error % record_frames == 0 && Num_Frame_Error > 0 && Num_Frame_Error!=n_frame_error_pre)
@@ -3565,25 +3594,25 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 	// paths selected by k-best detection
 	// array for storing results of bit-flip
 	int n_samples = pow(2, p);
-	int*** tried_codewords_h = new int** [Nv];  // µÚÒ»Î¬£ºNv¸öÖ¸Õë
+	int*** tried_codewords_h = new int** [Nv];  // ï¿½ï¿½Ò»Î¬ï¿½ï¿½Nvï¿½ï¿½Ö¸ï¿½ï¿½
 
 	for (int i = 0; i < Nv; ++i) {
-		tried_codewords_h[i] = new int* [n_samples];  // µÚ¶þÎ¬£ºÃ¿¸öµÚÒ»Î¬ÔªËØÖ¸Ïòn_samples¸öÖ¸Õë
+		tried_codewords_h[i] = new int* [n_samples];  // ï¿½Ú¶ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Ò»Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½n_samplesï¿½ï¿½Ö¸ï¿½ï¿½
 
 		for (int j = 0; j < n_samples; ++j) {
-			// µÚÈýÎ¬£ºÃ¿¸öµÚ¶þÎ¬ÔªËØÖ¸ÏòNh¸öÕûÊý
-			tried_codewords_h[i][j] = new int[Nh]();  // Ä©Î²µÄ()½øÐÐÖµ³õÊ¼»¯£¨0£©
+			// ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Ú¶ï¿½Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½Nhï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			tried_codewords_h[i][j] = new int[Nh]();  // Ä©Î²ï¿½ï¿½()ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½
 		}
 	}
 
-	int*** tried_codewords_v = new int** [Nh];  // µÚÒ»Î¬£ºNv¸öÖ¸Õë
+	int*** tried_codewords_v = new int** [Nh];  // ï¿½ï¿½Ò»Î¬ï¿½ï¿½Nvï¿½ï¿½Ö¸ï¿½ï¿½
 
 	for (int i = 0; i < Nh; ++i) {
-		tried_codewords_v[i] = new int* [n_samples];  // µÚ¶þÎ¬£ºÃ¿¸öµÚÒ»Î¬ÔªËØÖ¸Ïòn_samples¸öÖ¸Õë
+		tried_codewords_v[i] = new int* [n_samples];  // ï¿½Ú¶ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Ò»Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½n_samplesï¿½ï¿½Ö¸ï¿½ï¿½
 
 		for (int j = 0; j < n_samples; ++j) {
-			// µÚÈýÎ¬£ºÃ¿¸öµÚ¶þÎ¬ÔªËØÖ¸ÏòNh¸öÕûÊý
-			tried_codewords_v[i][j] = new int[Nv]();  // Ä©Î²µÄ()½øÐÐÖµ³õÊ¼»¯£¨0£©
+			// ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Ú¶ï¿½Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½Nhï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			tried_codewords_v[i][j] = new int[Nv]();  // Ä©Î²ï¿½ï¿½()ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½
 		}
 	}
 
@@ -3693,12 +3722,12 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -3722,8 +3751,8 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -4198,7 +4227,7 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -4244,7 +4273,7 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -5681,18 +5710,18 @@ void system2D_LSD_epdet_with_CRC(double* BER_array, double* FER_array)
 	}
 	for (int i = 0; i < Nv; ++i) {
 		for (int j = 0; j < n_samples; ++j) {
-			delete[] tried_codewords_h[i][j];  // ÊÍ·ÅµÚÈýÎ¬µÄÕûÊýÊý×é
+			delete[] tried_codewords_h[i][j];  // ï¿½Í·Åµï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
-		delete[] tried_codewords_h[i];  // ÊÍ·ÅµÚ¶þÎ¬µÄÖ¸ÕëÊý×é
+		delete[] tried_codewords_h[i];  // ï¿½Í·ÅµÚ¶ï¿½Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
-	delete[] tried_codewords_h;  // ÊÍ·ÅµÚÒ»Î¬µÄÖ¸ÕëÊý×é
+	delete[] tried_codewords_h;  // ï¿½Í·Åµï¿½Ò»Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (int i = 0; i < Nh; ++i) {
 		for (int j = 0; j < n_samples; ++j) {
-			delete[] tried_codewords_v[i][j];  // ÊÍ·ÅµÚÈýÎ¬µÄÕûÊýÊý×é
+			delete[] tried_codewords_v[i][j];  // ï¿½Í·Åµï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
-		delete[] tried_codewords_v[i];  // ÊÍ·ÅµÚ¶þÎ¬µÄÖ¸ÕëÊý×é
+		delete[] tried_codewords_v[i];  // ï¿½Í·ÅµÚ¶ï¿½Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
-	delete[] tried_codewords_v;  // ÊÍ·ÅµÚÒ»Î¬µÄÖ¸ÕëÊý×é
+	delete[] tried_codewords_v;  // ï¿½Í·Åµï¿½Ò»Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	delete[] ep_extr_var_omp;
 	delete[] y_mod_real;
 	delete[] x_mod_tmp;
@@ -5917,12 +5946,12 @@ void system2D_LSD_epdet_with_CRC_vertical(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -5946,8 +5975,8 @@ void system2D_LSD_epdet_with_CRC_vertical(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -6430,7 +6459,7 @@ void system2D_LSD_epdet_with_CRC_vertical(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -6476,7 +6505,7 @@ void system2D_LSD_epdet_with_CRC_vertical(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -7663,12 +7692,12 @@ void system2D_LSD_sys(double* BER_array, double* FER_array)
 	MatrixXf mmse_matrix(2 * Nt, 2 * Nr);
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -7949,7 +7978,7 @@ void system2D_LSD_sys(double* BER_array, double* FER_array)
 					{
 						oriLLRh[j][i] = oriLLR_tmp[j];
 						upLLR[j][i] = oriLLR_tmp[j];
-						// TEST£º det error
+						// TESTï¿½ï¿½ det error
 						x_mmse_out[j][i] = 0;
 						if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 						if (x_mmse_out[j][i] != x[j][i]) { n_det_err++; }
@@ -8361,12 +8390,12 @@ void system2D(double* BER_array, double* FER_array)
 	MatrixXf mmse_matrix(2 * Nt, 2 * Nr);
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -8390,8 +8419,8 @@ void system2D(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
 	int Num_Error, Num_Frame_Error;
@@ -8605,7 +8634,7 @@ void system2D(double* BER_array, double* FER_array)
 					{
 						oriLLRh[j][i] = oriLLR_tmp[j];
 						upLLR[j][i] = oriLLR_tmp[j];
-						// TEST£º det error
+						// TESTï¿½ï¿½ det error
 						x_mmse_out[j][i] = 0;
 						if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 						if (x_mmse_out[j][i] != x[j][i]) { n_det_err++; }
@@ -8980,12 +9009,12 @@ void system2D_LSD_partial_iter(double* BER_array, double* FER_array)
 	MatrixXf mmse_matrix(2 * Nt, 2 * Nr);
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -9220,7 +9249,7 @@ void system2D_LSD_partial_iter(double* BER_array, double* FER_array)
 					{
 						oriLLRh[j][i] = oriLLR_tmp[j];
 						upLLR[j][i] = oriLLR_tmp[j];
-						// TEST£º det error
+						// TESTï¿½ï¿½ det error
 						x_mmse_out[j][i] = 0;
 						if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 						if (x_mmse_out[j][i] != x[j][i]) { n_det_err++; }
@@ -9592,12 +9621,12 @@ void system2D_LSD_doublestage(double* BER_array, double* FER_array)
 	MatrixXf mmse_matrix(2 * Nt, 2 * Nr);
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -9846,7 +9875,7 @@ void system2D_LSD_doublestage(double* BER_array, double* FER_array)
 					{
 						oriLLRh[j][i] = oriLLR_tmp[j];
 						upLLR[j][i] = oriLLR_tmp[j];
-						// TEST£º det error
+						// TESTï¿½ï¿½ det error
 						x_mmse_out[j][i] = 0;
 						if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 						if (x_mmse_out[j][i] != x[j][i]) { n_det_err++; }
@@ -10439,12 +10468,12 @@ void system1D_LSD_MIMO(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 	for (int i = 0; i < N; i++) GG[i] = new int[N];
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -10502,8 +10531,8 @@ void system1D_LSD_MIMO(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -11196,12 +11225,12 @@ void system1D_LSD_MIMO_SVD(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 	for (int i = 0; i < N; i++) GG[i] = new int[N];
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -11259,8 +11288,8 @@ void system1D_LSD_MIMO_SVD(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -11946,8 +11975,8 @@ void system2D_JDD_copy(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -12976,8 +13005,8 @@ void system2D_JDD(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -13934,12 +13963,12 @@ void system2D_LSD_epdet_sys(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -13963,8 +13992,8 @@ void system2D_LSD_epdet_sys(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -14432,7 +14461,7 @@ void system2D_LSD_epdet_sys(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -14478,7 +14507,7 @@ void system2D_LSD_epdet_sys(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -15572,12 +15601,12 @@ void system2D_LSD_epdet_irregular(double* BER_array, double* FER_array)
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -15623,8 +15652,8 @@ void system2D_LSD_epdet_irregular(double* BER_array, double* FER_array)
 	//*****************************************************************
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;
@@ -16184,7 +16213,7 @@ void system2D_LSD_epdet_irregular(double* BER_array, double* FER_array)
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 						z = Q.transpose() * received_signal_omp;
@@ -16230,7 +16259,7 @@ void system2D_LSD_epdet_irregular(double* BER_array, double* FER_array)
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -17361,12 +17390,12 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 
 
 	// Matrix Definitions
-	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 
 
 	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -17457,8 +17486,8 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 	
 		// Main Function
 	// srand((unsigned int)time(0));
-	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::uniform_int_distribution<> distrib(1, 1000000);
 	int Num_Error, Num_Frame_Error;
 	float Decoding_Duration;	
@@ -18113,7 +18142,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 						float* ED = new float[K_KBEST];
 
 						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-						// Ö´ÐÐÒ»Ð©²Ù×÷
+						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 
 						
 						if (MIMODET == "KBEST")
@@ -18164,7 +18193,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 							}
 							oriLLRh[j][i] = oriLLR_tmp[j];
 							upLLR[j][i] = oriLLR_tmp[j];
-							// TEST£º det error
+							// TESTï¿½ï¿½ det error
 							x_mmse_out[j][i] = 0;
 							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 							if (x_mmse_out[j][i] != x[j][i]) {
@@ -19593,25 +19622,25 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //	// paths selected by k-best detection
 //	// array for storing results of bit-flip
 //	int n_samples = pow(2, p);
-//	int*** tried_codewords_h = new int** [Nv];  // µÚÒ»Î¬£ºNv¸öÖ¸Õë
+//	int*** tried_codewords_h = new int** [Nv];  // ï¿½ï¿½Ò»Î¬ï¿½ï¿½Nvï¿½ï¿½Ö¸ï¿½ï¿½
 //
 //	for (int i = 0; i < Nv; ++i) {
-//		tried_codewords_h[i] = new int* [n_samples];  // µÚ¶þÎ¬£ºÃ¿¸öµÚÒ»Î¬ÔªËØÖ¸Ïòn_samples¸öÖ¸Õë
+//		tried_codewords_h[i] = new int* [n_samples];  // ï¿½Ú¶ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Ò»Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½n_samplesï¿½ï¿½Ö¸ï¿½ï¿½
 //
 //		for (int j = 0; j < n_samples; ++j) {
-//			// µÚÈýÎ¬£ºÃ¿¸öµÚ¶þÎ¬ÔªËØÖ¸ÏòNh¸öÕûÊý
-//			tried_codewords_h[i][j] = new int[Nh]();  // Ä©Î²µÄ()½øÐÐÖµ³õÊ¼»¯£¨0£©
+//			// ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Ú¶ï¿½Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½Nhï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//			tried_codewords_h[i][j] = new int[Nh]();  // Ä©Î²ï¿½ï¿½()ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½
 //		}
 //	}
 //
-//	int*** tried_codewords_v = new int** [Nh];  // µÚÒ»Î¬£ºNv¸öÖ¸Õë
+//	int*** tried_codewords_v = new int** [Nh];  // ï¿½ï¿½Ò»Î¬ï¿½ï¿½Nvï¿½ï¿½Ö¸ï¿½ï¿½
 //
 //	for (int i = 0; i < Nh; ++i) {
-//		tried_codewords_v[i] = new int* [n_samples];  // µÚ¶þÎ¬£ºÃ¿¸öµÚÒ»Î¬ÔªËØÖ¸Ïòn_samples¸öÖ¸Õë
+//		tried_codewords_v[i] = new int* [n_samples];  // ï¿½Ú¶ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Ò»Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½n_samplesï¿½ï¿½Ö¸ï¿½ï¿½
 //
 //		for (int j = 0; j < n_samples; ++j) {
-//			// µÚÈýÎ¬£ºÃ¿¸öµÚ¶þÎ¬ÔªËØÖ¸ÏòNh¸öÕûÊý
-//			tried_codewords_v[i][j] = new int[Nv]();  // Ä©Î²µÄ()½øÐÐÖµ³õÊ¼»¯£¨0£©
+//			// ï¿½ï¿½ï¿½ï¿½Î¬ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Ú¶ï¿½Î¬Ôªï¿½ï¿½Ö¸ï¿½ï¿½Nhï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//			tried_codewords_v[i][j] = new int[Nv]();  // Ä©Î²ï¿½ï¿½()ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½
 //		}
 //	}
 //
@@ -19721,12 +19750,12 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //
 //
 //	// Matrix Definitions
-//	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // ÊµÓòÐÅµÀ¾ØÕó
-//	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ½ÓÊÕÐÅºÅ¾ØÕó
-//	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTH¾ØÕó
-//	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // µ¥Î»¾ØÕó
-//	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // Êä³öÐÅºÅ¾ØÕó
-//	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSE¾ØÕó
+//	//Eigen::Matrix<float, 2 * Nr, 2 * Nt> H_real; // Êµï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+//	//Eigen::Matrix<float, 2 * Nr, 1> received_signal; // ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+//	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> HTH; // HTHï¿½ï¿½ï¿½ï¿½
+//	//Eigen::Matrix<float, 2 * Nt, 2 * Nt> Identity = Eigen::Matrix<float, 2 * Nt, 2 * Nt>::Identity(); // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+//	//Eigen::Matrix<float, 2 * Nt, 1> output_signal; // ï¿½ï¿½ï¿½ï¿½ÅºÅ¾ï¿½ï¿½ï¿½
+//	//Eigen::Matrix<float, 2 * Nt, 2 * Nr> mmse_matrix; // MMSEï¿½ï¿½ï¿½ï¿½
 //
 //
 //	for (int i = 0; i < Nh; i++) GGh[i] = new int[Nh];
@@ -19750,8 +19779,8 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //	//*****************************************************************
 //		// Main Function
 //	// srand((unsigned int)time(0));
-//	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-//	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+//	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	std::uniform_int_distribution<> distrib(1, 1000000);
 //	int Num_Error, Num_Frame_Error;
 //	float Decoding_Duration;
@@ -20226,7 +20255,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //						float* ED = new float[K_KBEST];
 //
 //						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-//						// Ö´ÐÐÒ»Ð©²Ù×÷
+//						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 //
 //						for (int i = 0; i < 2 * Nr; i++) { received_signal_omp(i, 0) = y_mod_real_temp_omp[j][i]; }
 //						z = Q.transpose() * received_signal_omp;
@@ -20272,7 +20301,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //							}
 //							oriLLRh[j][i] = oriLLR_tmp[j];
 //							upLLR[j][i] = oriLLR_tmp[j];
-//							// TEST£º det error
+//							// TESTï¿½ï¿½ det error
 //							x_mmse_out[j][i] = 0;
 //							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 //							if (x_mmse_out[j][i] != x[j][i]) {
@@ -21709,18 +21738,18 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //	}
 //	for (int i = 0; i < Nv; ++i) {
 //		for (int j = 0; j < n_samples; ++j) {
-//			delete[] tried_codewords_h[i][j];  // ÊÍ·ÅµÚÈýÎ¬µÄÕûÊýÊý×é
+//			delete[] tried_codewords_h[i][j];  // ï¿½Í·Åµï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		}
-//		delete[] tried_codewords_h[i];  // ÊÍ·ÅµÚ¶þÎ¬µÄÖ¸ÕëÊý×é
+//		delete[] tried_codewords_h[i];  // ï¿½Í·ÅµÚ¶ï¿½Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	}
-//	delete[] tried_codewords_h;  // ÊÍ·ÅµÚÒ»Î¬µÄÖ¸ÕëÊý×é
+//	delete[] tried_codewords_h;  // ï¿½Í·Åµï¿½Ò»Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	for (int i = 0; i < Nh; ++i) {
 //		for (int j = 0; j < n_samples; ++j) {
-//			delete[] tried_codewords_v[i][j];  // ÊÍ·ÅµÚÈýÎ¬µÄÕûÊýÊý×é
+//			delete[] tried_codewords_v[i][j];  // ï¿½Í·Åµï¿½ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		}
-//		delete[] tried_codewords_v[i];  // ÊÍ·ÅµÚ¶þÎ¬µÄÖ¸ÕëÊý×é
+//		delete[] tried_codewords_v[i];  // ï¿½Í·ÅµÚ¶ï¿½Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	}
-//	delete[] tried_codewords_v;  // ÊÍ·ÅµÚÒ»Î¬µÄÖ¸ÕëÊý×é
+//	delete[] tried_codewords_v;  // ï¿½Í·Åµï¿½Ò»Î¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	delete[] ep_extr_var_omp;
 //	delete[] y_mod_real;
 //	delete[] x_mod_tmp;
@@ -21974,8 +22003,8 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //	//*****************************************************************
 //		// Main Function
 //	// srand((unsigned int)time(0));
-//	std::random_device rd;              // »ñÈ¡Ëæ»úÊýÖÖ×Ó
-//	std::mt19937 gen(rd());             // Ê¹ÓÃÖÖ×Ó³õÊ¼»¯mt19937Éú³ÉÆ÷
+//	std::random_device rd;              // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	std::mt19937 gen(rd());             // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê¼ï¿½ï¿½mt19937ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	std::uniform_int_distribution<> distrib(1, 1000000);
 //	int Num_Error, Num_Frame_Error;
 //	float Decoding_Duration;
@@ -22580,7 +22609,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //						float* ED = new float[K_KBEST];
 //
 //						if (MIMODET == "MMSE") { MMSEdetection(H_real, Identity, received_signal, mmse_matrix, output_signal, HTH, y_mod_real_temp_omp[j], y_mmse_temp_omp[j], sigma_sq); }
-//						// Ö´ÐÐÒ»Ð©²Ù×÷
+//						// Ö´ï¿½ï¿½Ò»Ð©ï¿½ï¿½ï¿½ï¿½
 //
 //
 //						if (MIMODET == "KBEST")
@@ -22631,7 +22660,7 @@ void system2D_LSD_epdet_irregular_SVD_precode(double* BER_array, double* FER_arr
 //							}
 //							oriLLRh[j][i] = oriLLR_tmp[j];
 //							upLLR[j][i] = oriLLR_tmp[j];
-//							// TEST£º det error
+//							// TESTï¿½ï¿½ det error
 //							x_mmse_out[j][i] = 0;
 //							if (oriLLR_tmp[j] < 0) { x_mmse_out[j][i] = 1; }
 //							if (x_mmse_out[j][i] != x[j][i]) {
