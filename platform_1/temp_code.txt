@@ -1,0 +1,90 @@
+			else
+			{
+				/*int **First_diff = new int*[L];
+				for (i = 0; i < L; i++) { First_diff[i] = new int[L]; }
+				decode_list(LLR, sum, stage, A_Ac, flag, CodeLength, DataLength, PM, L, log_L, First_diff, LLR_in, W, SCL_index, better, worse, path_number);
+
+				PolarEncode_xor(*u1, *sum, CodeLength);
+				// Re-Initialization
+				Count = 0;
+				Count_info = 0;
+				for (int k = 0; k < L; k++) { PM[k] = 0; }
+				for (int i = 0; i < L; i++)
+					delete[]First_diff[i];
+				delete[] First_diff;*/
+				decode_list_with_no_copy(LLR, sum_L, sum_R, stage, A_Ac, flag, CodeLength, DataLength, PM, L, log_L, p, fg,
+					LLR_in, W, SCL_index, better, worse, path_number);
+
+				for (i = 0; i < CodeLength / 2; i++) {
+					sum[0][i] = sum_L[0][i] ^ sum_R[0][i];
+					sum[0][i + CodeLength / 2] = sum_R[0][i];
+				}
+				PolarEncode_xor(*(u1), *(sum), CodeLength);
+				for (int k = 0; k < L; k++) { PM[k] = 0; }
+			}
+			T_finish = clock();
+			int Temp_Error = Num_Error;
+			for (i = 0; i < CodeLength; i++)
+			{
+				Num_Error += abs(u1[0][i] - u[i]);
+			}
+			if (Temp_Error < Num_Error) Num_Frame_Error++;
+			Decoding_Duration += (T_finish - T_start);			
+
+			cout << "correct u: " << endl;
+			for (i = 0; i < CodeLength; i++)
+				cout << u[i] << " ";
+			cout << endl;
+			cout << "decoded u: " << endl;
+
+			for (i = 0; i < CodeLength; i++)
+				cout << u1[0][i] << " ";
+			cout << endl;
+
+
+			else
+			{
+				int **First_diff = new int*[L];
+				for (i = 0; i < L; i++) { First_diff[i] = new int[L]; }
+				decode_list(LLR, sum, stage, A_Ac, flag, CodeLength, DataLength, PM, L, log_L, First_diff, LLR_in, W, SCL_index, better, worse, path_number);
+
+				PolarEncode_xor(*u1, *sum, CodeLength);
+				// Re-Initialization
+				Count = 0;
+				Count_info = 0;
+				for (int k = 0; k < L; k++) { PM[k] = 0; }
+				for (int i = 0; i < L; i++)
+					delete[]First_diff[i];
+				delete[] First_diff;
+			}
+			T_finish = clock();
+			int Temp_Error = Num_Error;
+			for (i = 0; i < CodeLength; i++)
+			{
+				Num_Error += abs(u1[0][i] - u[i]);
+			}
+			if (Temp_Error < Num_Error) Num_Frame_Error++;
+			Decoding_Duration += (T_finish - T_start);
+
+			/*decode_list_with_no_copy(LLR, sum_L, sum_R, stage, A_Ac, flag, CodeLength, DataLength, PM, L, log_L, p, fg,
+				LLR_in, W, SCL_index, better, worse, path_number);
+			for (int k = 0; k < L; k++)
+			{
+				for (i = 0; i < CodeLength / 2; i++) {
+					sum[k][i] = sum_L[k][i] ^ sum_R[k][i];
+					sum[k][i + CodeLength / 2] = sum_R[k][i];
+				}
+				PolarEncode_xor(*(u1 + k), *(sum + k), CodeLength);
+			}
+			cout << "correct u: " << endl;
+			for (i = 0; i < CodeLength; i++)
+				cout << u[i] << " ";
+			cout << endl;
+			cout << "decoded u: " << endl;
+			for (int k = 0; k < L; k++)
+			{
+				PolarEncode_xor(*u1, *sum, CodeLength);
+				for (i = 0; i < CodeLength; i++)
+					cout << u1[k][i] << " ";
+				cout << endl;
+			}*/
