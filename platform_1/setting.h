@@ -94,7 +94,7 @@ const int K = 567;
 const string polarcon = "RM";  // RM/5G/beta/GA
 const int Nh = 32;
 const int Nv = 32;
-const int Kh = 24;
+const int Kh = 22;
 const int Kv = 26;
 const int Nv_1D = Nh;
 

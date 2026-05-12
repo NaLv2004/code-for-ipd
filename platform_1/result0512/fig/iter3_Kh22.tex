@@ -1,0 +1,168 @@
+\begin{tikzpicture}
+  \pgfplotsset{
+    label style = {font=\fontsize{9pt}{7.2}\selectfont},
+    tick label style = {font=\fontsize{7pt}{7.2}\selectfont}
+  }
+\begin{axis}[
+	scale = 1,
+    ymode=log,
+%$E_b/N_0$
+    xlabel={$E_b/N_0$ [\text{dB}]}, %xlabel style={yshift=0.1em},
+    ylabel={BLER}, %ylabel style={yshift=-0.75em},
+    grid=both,
+  %  ymax=5000,
+	%ymin=0.000002,
+	xmax=12,
+	xmin=7,
+    ymajorgrids=true,
+    xmajorgrids=true,
+    grid style=dashed,
+   width=.80\columnwidth, height=7cm,
+   %width=.8\columnwidth, height=14cm,
+    thick,
+    mark size=3,
+    legend style={
+      anchor={north},
+      at={(0.5,-0.215)},
+      cells={anchor=west},
+      column sep= 2mm,
+	  thick,
+      font=\fontsize{7pt}{7.2}\selectfont,
+    },
+    legend to name=leg:intrlv_kh22,
+    legend columns=4,
+]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% RM-GA, softiter=3, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=red,
+    mark=square,
+    thick,
+    mark size=3,
+]
+table {
+7.0   0.925926
+7.5   0.729927
+8.0   0.316456
+8.5   0.097371
+9.0   0.020982
+9.5   0.002506
+10.0  0.000229
+};
+\addlegendentry{RM-GA, $T_{soft}=3$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% GA, softiter=3, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=NavyBlue,
+    mark=diamond,
+    thick,
+    mark size=3,
+]
+table {
+7.0   0.961538
+7.5   0.819672
+8.0   0.531915
+8.5   0.185529
+9.0   0.055928
+9.5   0.009707
+10.0  0.001586
+10.5  0.000168
+};
+\addlegendentry{GA, $T_{soft}=3$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 5G, softiter=3, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=Green,
+    mark=+,
+    thick,
+    mark size=3,
+]
+table {
+7.0   0.943396
+7.5   0.813008
+8.0   0.460829
+8.5   0.205339
+9.0   0.057339
+9.5   0.009254
+10.0  0.001447
+10.5  0.000124
+};
+\addlegendentry{5G, $T_{soft}=3$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% RM-GA, softiter=2, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=red,
+    mark=square,
+    thick,
+    dashed,
+    mark size=3,
+]
+table {
+7.0   1.000000
+7.5   0.990099
+8.0   0.900901
+8.5   0.813008
+9.0   0.469484
+9.5   0.207469
+10.0  0.087108
+10.5  0.018386
+11.0  0.004504
+11.5  0.000796
+};
+\addlegendentry{RM-GA, $T_{soft}=2$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% GA, softiter=2, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=NavyBlue,
+    mark=diamond,
+    thick,
+    dashed,
+    mark size=3,
+]
+table {
+7.0   1.000000
+7.5   0.990099
+8.0   0.961538
+8.5   0.833333
+9.0   0.598802
+9.5   0.341297
+10.0  0.129032
+10.5  0.042070
+11.0  0.010278
+11.5  0.001951
+12.0  0.000358
+};
+\addlegendentry{GA, $T_{soft}=2$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 5G, softiter=2, Kh=22 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addplot[
+    color=Green,
+    mark=+,
+    thick,
+    dashed,
+    mark size=3,
+]
+table {
+7.0   1.000000
+7.5   0.990099
+8.0   0.980392
+8.5   0.826446
+9.0   0.568182
+9.5   0.377358
+10.0  0.132802
+10.5  0.045683
+11.0  0.010615
+11.5  0.002187
+12.0  0.000445
+};
+\addlegendentry{5G, $T_{soft}=2$}
+
+
+\end{axis}
+\end{tikzpicture}
