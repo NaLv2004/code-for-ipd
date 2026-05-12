@@ -3346,6 +3346,15 @@ void system2D_LSD_epdet(double* BER_array, double* FER_array)
 		printf("%f %f %f\n", nSNR, (double)Num_Frame_Error / frame, (double)Num_Error / N_Info / frame);
 		BER_array[SNR_count] = (double)Num_Error / N_Info / frame;
 		FER_array[SNR_count] = (double)Num_Frame_Error / frame;
+		// Lightweight progress log: append a per-SNR final summary line.
+		if (file_progress.is_open()) {
+			file_progress << "# SNR " << nSNR << " final  frames=" << frame
+				<< " err_frames=" << Num_Frame_Error
+				<< " FER=" << ((double)Num_Frame_Error / frame)
+				<< " err_bits=" << Num_Error
+				<< " BER=" << ((double)Num_Error / (double)N_Info / (double)frame) << "\n";
+			file_progress.flush();
+		}
 		// save to .txt file
 		string polarde_serial = "";
 		for (int i = 0; i < softiter; i++)

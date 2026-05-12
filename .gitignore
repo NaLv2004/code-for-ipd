@@ -83,4 +83,4 @@ platform_1/result0512/*.err.txt
 platform_1/result0512/RM-GA.txt
 platform_1/result0512/GA.txt
 platform_1/result0512/5G.txt
-platform_1/result0512/progress_iter*.txt
+# (progress logs at result0512 root are kept; only those inside run_* subfolders are ignored via run_*/)
