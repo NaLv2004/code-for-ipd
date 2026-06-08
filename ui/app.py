@@ -33,6 +33,13 @@ CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
 RUNTIME_SKIP_DIRS = {".vs", "Debug", "Release", "x64"}
+RUNTIME_OUTPUT_DIRS = {
+    "ResFinal",
+    "ResIrr0922",
+    "ResIrregular",
+    "result0512",
+    "result_temp",
+}
 RUNTIME_OUTPUT_PREFIXES = (
     "AllPowerAllocResult",
     "AllRateRegularResult",
@@ -355,14 +362,14 @@ async def run_lifecycle(run: RunState) -> None:
                 return
             shutil.copy2(BUILD_EXE_PATH, run.exe_path)
             run.add_log(f"Executable snapshot: {run.exe_path}", stream="system")
-            prepare_run_workdir(run)
-            run.add_log(f"Isolated working directory: {run.work_dir}", stream="system")
+            run.add_log(f"Run data directory: {PROJECT_DIR}", stream="system")
 
         if run.terminate_requested:
             run.set_status("terminated", "Terminated before run")
             return
         run.set_status("running", "Running simulation")
-        code = await run_subprocess([str(run.exe_path)], run.work_dir, run, phase="run")
+        # The simulator expects the original data directory layout at runtime.
+        code = await run_subprocess([str(run.exe_path)], PROJECT_DIR, run, phase="run")
         run.process = None
         if run.terminate_requested:
             run.set_status("terminated", "Terminated")
@@ -709,14 +716,20 @@ def prepare_run_workdir(run: RunState) -> None:
             continue
         (run.work_dir / relative).mkdir(parents=True, exist_ok=True)
 
-    for file_path in PROJECT_DIR.iterdir():
+    for file_path in PROJECT_DIR.rglob("*"):
         if not file_path.is_file():
             continue
-        destination = run.work_dir / file_path.name
-        if file_path.name == "setting.h":
+        relative = file_path.relative_to(PROJECT_DIR)
+        if relative.parts and relative.parts[0] in RUNTIME_SKIP_DIRS:
+            continue
+        if relative.parts and relative.parts[0] in RUNTIME_OUTPUT_DIRS:
+            continue
+        destination = run.work_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if relative == Path("setting.h"):
             shutil.copy2(run.run_dir / "setting.generated.h", destination)
             continue
-        if is_runtime_output_file(file_path.name):
+        if len(relative.parts) == 1 and is_runtime_output_file(file_path.name):
             continue
         try:
             os.link(file_path, destination)

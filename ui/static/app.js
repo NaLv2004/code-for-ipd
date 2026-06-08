@@ -45,6 +45,7 @@ const state = {
   eventSource: null,
   metrics: new Map(),
   liveLineEl: null,
+  snapshotMode: new URLSearchParams(window.location.search).has("snapshot"),
 };
 
 const els = {
@@ -336,6 +337,10 @@ async function refreshRuns() {
   const data = await getJson(api.runs);
   state.runs = data.runs || [];
   renderRuns();
+  if (!state.selectedRunId && state.runs.length) {
+    selectRun(state.runs[0].id);
+    return;
+  }
   if (state.selectedRunId) {
     const selected = state.runs.find((run) => run.id === state.selectedRunId);
     if (selected) {
@@ -405,8 +410,28 @@ async function selectRun(runId) {
   renderMetrics();
   renderRuns();
 
+  const cachedRun = state.runs.find((run) => run.id === runId);
+  if (cachedRun) {
+    state.selectedRun = cachedRun;
+    updateSelectedHeader(cachedRun);
+    for (const metric of cachedRun.metrics || []) {
+      state.metrics.set(metricKey(metric.ebn0), metric);
+    }
+    renderMetrics();
+  }
+
   if (state.eventSource) {
     state.eventSource.close();
+  }
+  if (state.snapshotMode) {
+    try {
+      const run = await getJson(`/api/runs/${runId}`);
+      state.selectedRun = run;
+      hydrateRun(run);
+    } catch (error) {
+      appendUiLog(`Snapshot load failed: ${error.message}`, "stderr");
+    }
+    return;
   }
   const source = new EventSource(`/api/runs/${runId}/events`);
   state.eventSource = source;
