@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MIMO 2D Simulation UI</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">2D</div>
+          <div>
+            <h1>MIMO 2D Simulation</h1>
+            <p id="healthText">Release x64 · /O2</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <input id="runName" class="run-name" placeholder="Run name" />
+          <button id="startBtn" class="primary-btn">
+            <i data-lucide="play"></i>
+            <span>Start</span>
+          </button>
+          <button id="stopBtn" class="danger-btn" disabled>
+            <i data-lucide="square"></i>
+            <span>Terminate</span>
+          </button>
+          <button id="refreshBtn" class="ghost-btn" title="Refresh">
+            <i data-lucide="refresh-cw"></i>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="runs-panel">
+          <div class="panel-head">
+            <h2>Runs</h2>
+            <span id="runCount" class="subtle-pill">0</span>
+          </div>
+          <div id="runsList" class="runs-list"></div>
+        </aside>
+
+        <section class="params-panel">
+          <div class="panel-head param-head">
+            <div>
+              <h2>Parameters</h2>
+              <span id="paramCount" class="panel-meta">setting.h</span>
+            </div>
+            <div class="param-tools">
+              <div class="search-box">
+                <i data-lucide="search"></i>
+                <input id="paramSearch" placeholder="Search" />
+              </div>
+              <select id="categoryFilter" class="category-filter">
+                <option value="">All</option>
+              </select>
+              <button id="resetBtn" class="ghost-btn">
+                <i data-lucide="rotate-ccw"></i>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-strip">
+            <div class="section-label">Quick</div>
+            <div id="quickParams" class="quick-grid"></div>
+          </div>
+
+          <div id="parameterGroups" class="parameter-groups"></div>
+        </section>
+
+        <section class="output-panel">
+          <div class="panel-head output-head">
+            <div>
+              <h2 id="selectedRunTitle">Output</h2>
+              <span id="selectedRunMeta" class="panel-meta">No run selected</span>
+            </div>
+            <label class="auto-scroll">
+              <input id="autoScroll" type="checkbox" checked />
+              <span>Auto scroll</span>
+            </label>
+          </div>
+
+          <div class="results-band">
+            <div class="metric-summary">
+              <span class="section-label">BER / FER</span>
+              <strong id="metricCount">0</strong>
+            </div>
+            <div class="table-wrap">
+              <table class="metrics-table">
+                <thead>
+                  <tr>
+                    <th>Eb/N0</th>
+                    <th>FER</th>
+                    <th>BER</th>
+                    <th>Frames</th>
+                    <th>Bits</th>
+                  </tr>
+                </thead>
+                <tbody id="metricsBody">
+                  <tr class="empty-row"><td colspan="5">Waiting for data</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="log-shell">
+            <div class="log-head">
+              <span class="section-label">Log</span>
+              <button id="clearLogBtn" class="ghost-btn small-btn">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+            <div id="logView" class="log-view"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
